@@ -1,17 +1,24 @@
 "use client";
 
-import { Card } from '@/components/ui/card';
-import { Package, Plus, Search } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 export default function ProductsPage() {
+  const { isRtl } = useLanguage();
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-3xl font-bold text-gray-800">Products Management</h2>
-        <button className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-          <Plus className="h-5 w-5" />
-          <span>Add Product</span>
-        </button>
+        <h2 className={`text-3xl font-bold text-gray-800 ${isRtl ? 'text-right' : 'text-left'}`}>
+          Products
+        </h2>
+        <div className="flex space-x-3">
+          <Button className="flex items-center space-x-2">
+            <Plus className="h-5 w-5" />
+            <span>Add Product</span>
+          </Button>
+        </div>
       </div>
 
       <div className="flex space-x-4 mb-6">
@@ -44,7 +51,7 @@ export default function ProductsPage() {
           <div key={item} className="grid grid-cols-6 gap-4 p-4 border-b hover:bg-gray-50">
             <div className="flex items-center space-x-3">
               <div className="h-10 w-10 bg-gray-100 rounded-lg flex items-center justify-center">
-                <Package className="h-6 w-6 text-gray-600" />
+                <Plus className="h-6 w-6 text-gray-600" />
               </div>
               <span>Product {item}</span>
             </div>

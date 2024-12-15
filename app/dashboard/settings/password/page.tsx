@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import { Card } from "@/components/ui/card";
+import { useLanguage } from "@/app/contexts/LanguageContext";
 
 export default function PasswordSettings() {
-  const [isRtl, setIsRtl] = useState(() => localStorage.getItem("language") === "ar");
+  const { isRtl } = useLanguage();
 
   return (
     <Card className="p-6">

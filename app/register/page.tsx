@@ -1,23 +1,26 @@
-"use client";
-import { useState } from "react";
-import HeroSection from "@/components/ HeroSection";
-import RegisterFormContainer from "@/components/RegisterFormContainer";
-// import VideoDialog from "@/components/VideoDialog";
+"use client"
 
-const RegisterPage = () => {
-  const [openVideo, setOpenVideo] = useState(false);
+import Image from "next/image"
+import RegisterForm from "@/components/registerForm"
+import bgImage from "@/public/images/auth/bg-2.jpg"
+import line from "@/public/images/auth/line.png"
 
+export default function RegisterPage() {
   return (
-    <>
-      <div className="min-h-screen bg-background flex items-center overflow-hidden w-full">
-        <div className="min-h-screen basis-full flex flex-wrap w-full justify-center overflow-y-auto">
-          <HeroSection onPlayClick={() => setOpenVideo(true)} />
-          <RegisterFormContainer />
+    <div className="flex min-h-screen">
+      <div className="relative hidden w-1/2 lg:block">
+        <Image
+          src={bgImage}
+          alt="Background"
+          className="h-full w-full object-cover"
+          priority
+        />
+      </div>
+      <div className="flex w-full items-center justify-center px-4 lg:w-1/2">
+        <div className="w-full max-w-[26rem] p-4">
+          <RegisterForm />
         </div>
       </div>
-      {/* <VideoDialog open={openVideo} onClose={() => setOpenVideo(false)} /> */}
-    </>
-  );
-};
-
-export default RegisterPage;
+    </div>
+  )
+}

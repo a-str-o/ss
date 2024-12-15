@@ -1,7 +1,7 @@
 "use client";
 
 import { Card } from '@/components/ui/card';
-import { ClipboardList, Search, Filter } from 'lucide-react';
+import { ClipboardList, Filter } from 'lucide-react';
 
 export default function OrdersPage() {
   return (

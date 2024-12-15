@@ -1,63 +1,51 @@
 "use client"
 
-import * as React from "react"
 import { zodResolver } from "@hookform/resolvers/zod"
-import * as z from "zod"
 import { useForm } from "react-hook-form"
-import { Button } from "@/components/ui/button"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { DialogFooter } from "@/components/ui/dialog"
-import { useLanguage, useTranslation } from "@/app/contexts/LanguageContext"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+import * as z from "zod"
+import { useState } from "react"
 
-const stockTypes = [
-  { value: "raw_materials", label: "Raw Materials" },
-  { value: "wip", label: "Work in Progress (WIP)" },
-  { value: "finished_goods", label: "Finished Goods" },
-  { value: "packaging", label: "Packaging Materials" },
-  { value: "spare_parts", label: "Spare Parts" },
-  { value: "maintenance", label: "Maintenance Items" },
-  { value: "office_supplies", label: "Office Supplies" },
-  { value: "safety_stock", label: "Safety Stock" },
-  { value: "buffer_stock", label: "Buffer Stock" },
-  { value: "seasonal_stock", label: "Seasonal Stock" },
-  { value: "transit_stock", label: "Transit Stock" },
-  { value: "consignment_stock", label: "Consignment Stock" },
-  { value: "cycle_stock", label: "Cycle Stock" },
-  { value: "promotional", label: "Promotional Items" },
-  { value: "quality_control", label: "Quality Control Samples" },
-  { value: "returns_damaged", label: "Returns/Damaged Goods" },
-  { value: "obsolete", label: "Obsolete Stock" },
-  { value: "bulk_storage", label: "Bulk Storage" },
-  { value: "cold_storage", label: "Cold Storage" },
-  { value: "hazardous", label: "Hazardous Materials" },
-] as const
+import { Button } from "@/components/ui/button"
+import { DialogFooter } from "@/components/ui/dialog"
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
+import { Input } from "@/components/ui/input"
+import { useLanguage } from "@/app/contexts/LanguageContext"
+import { Stock } from "@/lib/stock"
+
+export const stockTypeSuggestions = [
+  "Raw Materials",
+  "Work in Progress (WIP)",
+  "Finished Goods",
+  "Packaging Materials",
+  "Spare Parts",
+  "Maintenance Items",
+  "Office Supplies",
+  "Safety Stock",
+  "Buffer Stock",
+  "Seasonal Stock",
+  "Transit Stock",
+  "Consignment Stock",
+  "Cycle Stock",
+  "Promotional Items",
+  "Quality Control Samples",
+  "Returns/Damaged Goods",
+  "Obsolete Stock",
+  "Bulk Storage",
+  "Cold Storage",
+  "Hazardous Materials",
+]
 
 const formSchema = z.object({
   name: z.string().min(2, {
     message: "Name must be at least 2 characters.",
   }),
-  type: z.string({
-    required_error: "Please select a stock type.",
+  type: z.string().min(1, {
+    message: "Type is required.",
   }),
-  volumeSize: z.coerce.number().min(0, {
+  volume_size: z.coerce.number().min(0, {
     message: "Volume size must be a positive number.",
   }),
-  sizeLimit: z.coerce.number().min(0, {
+  size_limit: z.coerce.number().min(0, {
     message: "Size limit must be a positive number.",
   }),
   address: z.string().min(2, {
@@ -65,7 +53,7 @@ const formSchema = z.object({
   }),
 })
 
-type FormData = z.infer<typeof formSchema>
+export type FormData = z.infer<typeof formSchema>
 
 interface StockFormProps {
   initialData?: FormData
@@ -74,23 +62,28 @@ interface StockFormProps {
 }
 
 export default function StockForm({ initialData, onSubmit, onCancel }: StockFormProps) {
-  const { language } = useLanguage()
-  const t = useTranslation()
+  const [typeSearchTerm, setTypeSearchTerm] = useState("")
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const { t } = useLanguage()
 
   const form = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: initialData || {
       name: "",
       type: "",
-      volumeSize: 0,
-      sizeLimit: 0,
+      volume_size: 0,
+      size_limit: 0,
       address: "",
     },
   })
 
+  const filteredSuggestions = stockTypeSuggestions.filter((type) =>
+    type.toLowerCase().includes(typeSearchTerm.toLowerCase())
+  )
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
         <FormField
           control={form.control}
           name="name"
@@ -98,7 +91,7 @@ export default function StockForm({ initialData, onSubmit, onCancel }: StockForm
             <FormItem>
               <FormLabel>{t?.name || "Name"}</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Enter stock location name" />
+                <Input placeholder={t?.stockName || "Stock name"} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -109,56 +102,72 @@ export default function StockForm({ initialData, onSubmit, onCancel }: StockForm
           control={form.control}
           name="type"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="relative">
               <FormLabel>{t?.type || "Type"}</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select stock type" />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {stockTypes.map((type) => (
-                    <SelectItem key={type.value} value={type.value}>
-                      {type.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <FormControl>
+                <div>
+                  <Input
+                    placeholder={t?.stockType || "Stock type"}
+                    {...field}
+                    value={field.value}
+                    onChange={(e) => {
+                      field.onChange(e.target.value)
+                      setTypeSearchTerm(e.target.value)
+                      setShowSuggestions(true)
+                    }}
+                    onFocus={() => setShowSuggestions(true)}
+                  />
+                  {showSuggestions && typeSearchTerm && (
+                    <div className="absolute z-50 w-full mt-1 bg-white border rounded-md shadow-lg max-h-48 overflow-auto">
+                      {filteredSuggestions.map((suggestion, index) => (
+                        <div
+                          key={index}
+                          className="px-3 py-2 cursor-pointer hover:bg-gray-100"
+                          onClick={() => {
+                            field.onChange(suggestion)
+                            setTypeSearchTerm(suggestion)
+                            setShowSuggestions(false)
+                          }}
+                        >
+                          {suggestion}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="grid grid-cols-2 gap-4">
-          <FormField
-            control={form.control}
-            name="volumeSize"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t?.volumeSize || "Volume Size"}</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} placeholder="0" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormField
+          control={form.control}
+          name="volume_size"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t?.volumeSize || "Volume Size"}</FormLabel>
+              <FormControl>
+                <Input type="number" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <FormField
-            control={form.control}
-            name="sizeLimit"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t?.sizeLimit || "Size Limit"}</FormLabel>
-                <FormControl>
-                  <Input type="number" {...field} placeholder="0" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+        <FormField
+          control={form.control}
+          name="size_limit"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t?.sizeLimit || "Size Limit"}</FormLabel>
+              <FormControl>
+                <Input type="number" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
         <FormField
           control={form.control}
@@ -167,7 +176,7 @@ export default function StockForm({ initialData, onSubmit, onCancel }: StockForm
             <FormItem>
               <FormLabel>{t?.address || "Address"}</FormLabel>
               <FormControl>
-                <Input {...field} placeholder="Enter stock location address" />
+                <Input placeholder={t?.stockAddress || "Stock address"} {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
